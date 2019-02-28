@@ -74,3 +74,4 @@ def pull_lyrics(GENRE):
 
 gen = input('genre folder?\n')
 pull_lyrics(gen)
+print('whats up')
