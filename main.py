@@ -6,7 +6,6 @@ import requests
 import json
 import time
 import re
-import pandas as pd
 
 agent = 'Mozilla/5.0 (Windows NT 6.0; WOW64; rv:24.0) \
         Gecko/20100101 Firefox/24.0'
@@ -88,17 +87,6 @@ def make_pairs(corpus):
     for i in range(len(corpus)-1):
         yield (corpus[i], corpus[i+1])
 
-def update_M(pairs):
-    for word_1,word_2 in pairs:
-        word_1 = word_1.lower()
-        word_2 = word_2.lower()
-        if word_1 in M.columns:
-            M[word_2][word_1] += 1
-        else:
-            n = len(M)
-            M = M.assign(word_1=pd.Series(np.zeros(n)))
-            df = pd.DataFrame(np.zeros(n+1),columns=M.columns)
-            M.append(df)
 def update_dict(pairs):
     for word_1, word_2 in pairs:
         if word_1 in word_dict.keys():
@@ -108,34 +96,7 @@ def update_dict(pairs):
         if word_1[0].isupper():
             starting_words.append(word_1)
 
-def add_word(word,M):
-    n = len(M)
-    M[word] = np.zeros(n)
-    row = pd.DataFrame([[word] + (n+1)*[0]],columns=M.columns)
-    M = M.append(row)
-    return M
 
-def update_M(pairs,M):
-    for word_1,word_2 in pairs:
-        word_1 = word_1.lower()
-        word_2 = word_2.lower()
-        print(word_1,word_2)
-        if word_1 not in M.columns:
-            M = add_word(word_1,M)    
-        if word_2 not in M.columns:
-            M = add_word(word_2,M)
-        
-        M.loc[M['_NEXT_']==word_2,word_1] += 1
-        
-    return M
-
-def normalize_M(M):
-    df = M.drop('_NEXT_',axis=1)
-    for col in df.columns:
-        M[col] /= M[col].sum()
-    return M
-
-M = pd.DataFrame(columns=['_NEXT_'])
 SPEECH_PATH = './hip hop/song lyrics/'
 word_dict = {}
 starting_words = []
@@ -155,15 +116,15 @@ song_number = 0
 for song in os.listdir(SPEECH_PATH + "Eminem" + '/'):
         song_number = song_number + 1
         song_path = SPEECH_PATH + "Eminem" + '/'
+        print(song_path)
         with open(f'{song_path}{song}', encoding='latin-1') as speech:
             for line in speech:
                 # contents = line.read()
-                contents = re.sub(r",|\(|\)|\!|\?|\.|(\[.*:\])|\"", "", line)
+                contents = re.sub(r",|\(|\)|\!|\?|\.|(\[.*\])|\"", "", line)
                 corpus = contents.split()
                 pairs = make_pairs(corpus)
                 update_dict(pairs)
-                M = update_M(pairs,M)
-M = normalize_M(M)
+                
 
 # song_path = SPEECH_PATH + "Eminem" + '/'
 # song_name = "BadHusband.txt"
