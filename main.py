@@ -38,7 +38,7 @@ def songs(artist):
     artist = {
         'artist': artist,
         'albums': {}
-        }
+    }
 
     soup = BeautifulSoup(req.content, 'html.parser')
 
@@ -82,10 +82,10 @@ def lyrics(artist, song):
         return lyrics
 
 
-
 def make_pairs(corpus):
     for i in range(len(corpus)-1):
         yield (corpus[i], corpus[i+1])
+
 
 def update_dict(pairs):
     for word_1, word_2 in pairs:
@@ -97,40 +97,35 @@ def update_dict(pairs):
             starting_words.append(word_1)
 
 
-SPEECH_PATH = './songs/'
+SPEECH_PATH = './hip hop/song lyrics/'
 word_dict = {}
 starting_words = []
 
-aloe_vera = lyrics("Imagine Dragons", "radioactive")
-for line in aloe_vera:
-        corpus = line.split()
-        pairs = make_pairs(corpus)
-        update_dict(pairs)
-
 song_number = 0
 
-for speech_file in os.listdir(SPEECH_PATH):
-    song_number = song_number + 1
-    with open(f'{SPEECH_PATH}{speech_file}', encoding='utf8') as speech:
-        contents = speech.read()
-        corpus = contents.split()
-        pairs = make_pairs(corpus)
-        update_dict(pairs)
+# for artist in os.listdir(SPEECH_PATH):
+#     for song in os.listdir(SPEECH_PATH + artist + '/'):
+#         song_number = song_number + 1
+#         song_path = SPEECH_PATH + artist + '/'
+#         with open(f'{song_path}{song}', encoding='latin-1') as speech:
+#             contents = speech.read()
+#             corpus = contents.split()
+#             pairs = make_pairs(corpus)
+#             update_dict(pairs)
 
-# song_list = open('./songs/songs.txt', encoding='utf8').read()
-# song_list = song_list.split("\n")
-# for song in song_list:
-#     print(song)
-#     aloe_vera = lyrics("Imagine Dragons", song)
-#     for line in aloe_vera:
-#         corpus = line.split()
-#         pairs = make_pairs(corpus)
-#         update_dict(pairs)
-#         time.sleep(2)
+for song in os.listdir(SPEECH_PATH + "Eminem" + '/'):
+        song_number = song_number + 1
+        song_path = SPEECH_PATH + "Eminem" + '/'
+        with open(f'{song_path}{song}', encoding='latin-1') as speech:
+            contents = speech.read()
+            corpus = contents.split()
+            pairs = make_pairs(corpus)
+            update_dict(pairs)
 
+print(song_number)
 first_word = np.random.choice(starting_words)
 chain = [first_word]
-n_words = 40
+n_words = 60
 for i in range(n_words):
     chain.append(np.random.choice(word_dict[chain[-1]]))
 print(' '.join(chain))
