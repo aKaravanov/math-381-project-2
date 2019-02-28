@@ -5,6 +5,7 @@ from bs4 import BeautifulSoup
 import requests
 import json
 import time
+import re
 
 agent = 'Mozilla/5.0 (Windows NT 6.0; WOW64; rv:24.0) \
         Gecko/20100101 Firefox/24.0'
@@ -117,15 +118,34 @@ for song in os.listdir(SPEECH_PATH + "Eminem" + '/'):
         song_number = song_number + 1
         song_path = SPEECH_PATH + "Eminem" + '/'
         with open(f'{song_path}{song}', encoding='latin-1') as speech:
-            contents = speech.read()
-            corpus = contents.split()
-            pairs = make_pairs(corpus)
-            update_dict(pairs)
+            for line in speech:
+                # contents = line.read()
+                contents = re.sub(r",|\(|\)|\!|\?|\.|\[|\]|\"", "", line)
+                corpus = contents.split()
+                pairs = make_pairs(corpus)
+                update_dict(pairs)  
+
+# song_path = SPEECH_PATH + "Eminem" + '/'
+# song_name = "BadHusband.txt"
+# with open(f'{song_path}{song_name}', encoding='latin-1') as speech:
+#             for line in speech:
+#                 # contents = line.read()
+#                 contents = re.sub(r",|\(|\)|\!|\?|\.|\[|\]|\"", "", line)
+#                 corpus = contents.split()
+#                 pairs = make_pairs(corpus)
+#                 update_dict(pairs)            
 
 print(song_number)
 first_word = np.random.choice(starting_words)
 chain = [first_word]
-n_words = 60
+n_words = 30
 for i in range(n_words):
-    chain.append(np.random.choice(word_dict[chain[-1]]))
+    try:
+        chain.append(np.random.choice(word_dict[chain[-1]]))
+    except:
+        chain.append(".")
+        first_word = np.random.choice(starting_words)
+        chain.append(first_word)
+        chain.append(np.random.choice(word_dict[chain[-1]]))
+
 print(' '.join(chain))
