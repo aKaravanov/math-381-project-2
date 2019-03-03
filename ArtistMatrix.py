@@ -8,6 +8,8 @@ class ArtistMatrix:
         '''initializes the artist matrix'''
         
         self.M = np.zeros((size,size))
+        # this dictionary maps words in an artists vocab to the index
+        # in the transition matrix
         self.ind_dict = {}
         self.artist = artist
         self.genre = genre
@@ -75,7 +77,8 @@ class ArtistMatrix:
             print('not a valid distance')
     
     def __common_dist(self,other):
-        '''compares two artists based on the words in their shared vocabulary'''
+        '''compares two artists based on the words in their shared vocabulary, rescaled
+        by the ratio of their shared words to their whole vocabulary'''
         print('comparing',self.artist,'and',other.artist)
         my_inds = []
         your_inds = []
@@ -88,7 +91,7 @@ class ArtistMatrix:
         me = my_cols[my_inds,:]
         your_cols = other.M[:,your_inds]
         you = your_cols[your_inds,:]
-        return np.sum((me-you)**2)
+        return np.sum((me-you)**2) * self.size * other.size / len(my_inds)**2
     
     def __enlarge(self):
         '''makes the matrix bigger during initialization, if more 
