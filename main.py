@@ -6,6 +6,7 @@ import requests
 import json
 import time
 import re
+import pyphen
 
 agent = 'Mozilla/5.0 (Windows NT 6.0; WOW64; rv:24.0) \
         Gecko/20100101 Firefox/24.0'
@@ -93,12 +94,18 @@ def update_dict(pairs):
             word_dict[word_1].append(word_2)
         else:
             word_dict[word_1] = [word_2]
+        if (len(dic.positions(word_1))+1) in syl_dict.keys():
+            syl_dict[len(dic.positions(word_1))+1].append(len(dic.positions(word_2))+1)
+        else:
+            syl_dict[len(dic.positions(word_1))+1] = [len(dic.positions(word_2))+1]
         if word_1[0].isupper():
             starting_words.append(word_1)
 
 
 SPEECH_PATH = './hip hop/song lyrics/'
-word_dict = {}
+word_dict = dict()
+syl_dict = dict()
+dic = pyphen.Pyphen(lang='en')
 starting_words = []
 
 song_number = 0
@@ -116,7 +123,7 @@ song_number = 0
 for song in os.listdir(SPEECH_PATH + "Eminem" + '/'):
         song_number = song_number + 1
         song_path = SPEECH_PATH + "Eminem" + '/'
-        print(song_path)
+        # print(song_path)
         with open(f'{song_path}{song}', encoding='latin-1') as speech:
             for line in speech:
                 # contents = line.read()
