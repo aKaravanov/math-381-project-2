@@ -1,6 +1,7 @@
 import numpy as np
 import os
 import re 
+import pyphen
 rand = np.random
 
 class ArtistMatrix:
@@ -10,10 +11,12 @@ class ArtistMatrix:
         self.M = np.zeros((size,size))
         # this dictionary maps words in an artists vocab to the index
         # in the transition matrix
+        self.M_syl = np.zeros((10,10))
+        self.pyp = pyphen.Pyphen(lang='en')
         self.ind_dict = {}
+        self.syl_dict = {}
         self.artist = artist
         self.genre = genre
-        self.next_ind = 0
         self.size = size
         self.songs = 0
         self.ARTIST_PATH = '{}/song lyrics/{}/'.format(genre,artist)
@@ -25,40 +28,52 @@ class ArtistMatrix:
                 line = re.sub(r',|\(|\)|\!|\?|\.|(\[.*\])|\"', '', line)
                 words = line.split()
                 if len(words) > 0: # case of empty lines
-                    for w1,w2 in zip(['_start_'] + words,words + ['_end_']):
+                    words1 = ['_start_'] + words
+                    words2 = words + ['_end_']
+                    w1_syls = ['_start_'] + \
+                    [len(self.pyp.positions(w1))+1 for w1 in words]
+                    w2_syls = [len(self.pyp.positions(w2))+1 for w2 in words] \
+                    + ['_end_']
+                    for w1,w2,w1_syl,w2_syl in zip(words1,words2,w1_syls,w2_syls):
                         w1 = w1.lower()
                         w2 = w2.lower()
                         if w1 not in self.ind_dict.keys():
-                            self.__add_word(w1)
+                            self.__add_word(w1,self.ind_dict)
                         if w2 not in self.ind_dict.keys():
-                            self.__add_word(w2)
-                        self.__update_entry(w1,w2)
+                            self.__add_word(w2,self.ind_dict)
+                        if w1_syl not in self.syl_dict.keys():
+                            self.__add_word(w1_syl,self.syl_dict)
+                        if w2_syl not in self.syl_dict.keys():
+                            self.__add_word(w2_syl,self.syl_dict)
+                        self.__update_entry(w1,w2,self.ind_dict,self.M)
+                        self.__update_entry(w1_syl,w2_syl,self.syl_dict,self.M_syl)
             f.close()
-        self.__normalize()
+        self.M = self.__normalize(self.M,self.ind_dict)
+        self.M_syl = self.__normalize(self.M_syl,self.syl_dict)
         print(self.artist,self.size)
             
-    def __add_word(self,word):
+    def __add_word(self,word,d):
         '''adds a word to the vocabulary of the artist'''
-        self.ind_dict.update({word:self.next_ind})
-        self.next_ind += 1
-        if self.next_ind >= self.size:
+        d.update({word:len(d)})
+        if len(d) >= self.size:
             self.__enlarge()
     
-    def __update_entry(self,w1,w2):
+    def __update_entry(self,w1,w2,d,M):
         '''adds an occurance of of w1 following w2'''
-        c = self.ind_dict[w1]
-        r = self.ind_dict[w2]
-        self.M[r,c] += 1
+        c = d[w1]
+        r = d[w2]
+        M[r,c] += 1
         
-    def __normalize(self):
+    def __normalize(self,M,d):
         '''finishes initialization by making all columns sum to one, and 
         trimming the extra rows and columns off the matrix'''
-        self.M = self.M[0:self.next_ind,0:self.next_ind]
+        M1 = M[0:len(d),0:len(d)]
         # end always goes to start
-        self.M[self.ind_dict['_start_'],self.ind_dict['_end_']] = 1
-        s = self.M.sum(axis=0)
-        self.M /= s
+#        M[d['_start_'],d['_end_']] = 1
+        s = M1.sum(axis=0)
+        M1 /= s
         self.size = len(self.ind_dict)
+        return M1
         
     def get_entry(self,w1,w2):
         '''returns probability of w2 following w1'''
@@ -91,7 +106,8 @@ class ArtistMatrix:
         me = my_cols[my_inds,:]
         your_cols = other.M[:,your_inds]
         you = your_cols[your_inds,:]
-        return np.sum((me-you)**2) * self.size * other.size / len(my_inds)**2
+        dis = np.sqrt(np.sum((me-you)**2))
+        return dis * self.size * other.size / len(my_inds)**2
     
     def __enlarge(self):
         '''makes the matrix bigger during initialization, if more 
