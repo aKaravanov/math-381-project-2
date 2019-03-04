@@ -11,7 +11,7 @@ class ArtistMatrix:
         self.M = np.zeros((size,size))
         # this dictionary maps words in an artists vocab to the index
         # in the transition matrix
-        self.M_syl = np.zeros((10,10))
+        self.M_syl = np.zeros((20,20))
         self.pyp = pyphen.Pyphen(lang='en')
         self.ind_dict = {}
         self.syl_dict = {}
@@ -69,7 +69,7 @@ class ArtistMatrix:
         trimming the extra rows and columns off the matrix'''
         M1 = M[0:len(d),0:len(d)]
         # end always goes to start
-#        M[d['_start_'],d['_end_']] = 1
+        M[d['_start_'],d['_end_']] = 1
         s = M1.sum(axis=0)
         M1 /= s
         self.size = len(self.ind_dict)
@@ -86,29 +86,40 @@ class ArtistMatrix:
         
     def compare_to(self,other,method='common'):
         '''compares this artists matrix to other's matrix'''
+        print('comparing',self.artist,'and',other.artist)
         if method == 'common':
-            return self.__common_dist(other)
+            dis,common = self.__dist(self.M,self.ind_dict,
+                                       other.M,other.ind_dict)
+            return dis * self.size * other.size / common**2
+        elif method == 'syllables':
+            dis,common = self.__dist(self.M_syl,self.syl_dict,
+                                       other.M_syl,other.syl_dict)
+            return dis
         else:
             print('not a valid distance')
     
-    def __common_dist(self,other):
-        '''compares two artists based on the words in their shared vocabulary, rescaled
-        by the ratio of their shared words to their whole vocabulary'''
-        print('comparing',self.artist,'and',other.artist)
+    def __dist(self,M,d,otherM,otherd):
+        '''compares two artists matrices, returning the euclidean distance 
+        only between columns/rows found in both matrices, also returns the number
+        of columns/rows they have in common'''
         my_inds = []
         your_inds = []
-        for word in self.ind_dict.keys():
-            if word in other.ind_dict.keys():
-                my_inds.append(self.ind_dict[word])
-                your_inds.append(other.ind_dict[word])
+        for word in d.keys():
+            if word in otherd.keys():
+                my_inds.append(d[word])
+                your_inds.append(otherd[word])
         print('common words',len(my_inds))      
-        my_cols = self.M[:,my_inds]
+        my_cols = M[:,my_inds]
         me = my_cols[my_inds,:]
-        your_cols = other.M[:,your_inds]
+        your_cols = otherM[:,your_inds]
         you = your_cols[your_inds,:]
         dis = np.sqrt(np.sum((me-you)**2))
-        return dis * self.size * other.size / len(my_inds)**2
+        return dis, len(my_inds)
     
+    def __syllable_dist(self,other):
+        '''compares artists based on how words of a certain number of syllables
+        transition from one to another'''
+        
     def __enlarge(self):
         '''makes the matrix bigger during initialization, if more 
         space is needed'''
