@@ -12,9 +12,11 @@ class ArtistMatrix:
         # this dictionary maps words in an artists vocab to the index
         # in the transition matrix
         self.M_syl = np.zeros((20,20))
+        self.M_length = np.zeros((50,50)) 
         self.pyp = pyphen.Pyphen(lang='en')
         self.ind_dict = {}
         self.syl_dict = {}
+        self.word_length_dict = {}
         self.artist = artist
         self.genre = genre
         self.size = size
@@ -30,11 +32,13 @@ class ArtistMatrix:
                 if len(words) > 0: # case of empty lines
                     words1 = ['_start_'] + words
                     words2 = words + ['_end_']
+                    w1_length = ['_start_'] + [len(w1) for w1 in words]
+                    w2_length = [len(w2) for w2 in words] + ['_end_']
                     w1_syls = ['_start_'] + \
                     [len(self.pyp.positions(w1))+1 for w1 in words]
                     w2_syls = [len(self.pyp.positions(w2))+1 for w2 in words] \
                     + ['_end_']
-                    for w1,w2,w1_syl,w2_syl in zip(words1,words2,w1_syls,w2_syls):
+                    for w1,w2,w1_syl,w2_syl,w1_length,w2_length  in zip(words1,words2,w1_syls,w2_syls,w1_length,w2_length):
                         w1 = w1.lower()
                         w2 = w2.lower()
                         if w1 not in self.ind_dict.keys():
@@ -45,7 +49,12 @@ class ArtistMatrix:
                             self.__add_word(w1_syl,self.syl_dict)
                         if w2_syl not in self.syl_dict.keys():
                             self.__add_word(w2_syl,self.syl_dict)
+                        if w1_length not in self.word_length_dict.keys():
+                            self.__add_word(w1_length,self.word_length_dict)
+                        if w2_length not in self.word_length_dict.keys():
+                            self.__add_word(w2_length,self.word_length_dict)    
                         self.__update_entry(w1,w2,self.ind_dict,self.M)
+                        self.__update_entry(w1_length,w2_length,self.word_length_dict,self.M_length)
                         self.__update_entry(w1_syl,w2_syl,self.syl_dict,self.M_syl)
             f.close()
         self.M = self.__normalize(self.M,self.ind_dict)
@@ -94,6 +103,10 @@ class ArtistMatrix:
         elif method == 'syllables':
             dis,common = self.__dist(self.M_syl,self.syl_dict,
                                        other.M_syl,other.syl_dict)
+            return dis
+        elif method == 'words':
+            dis,common = self.__dist(self.M_length,self.word_length_dict,
+                                       other.M_length,other.word_length_dict)
             return dis
         else:
             print('not a valid distance')
