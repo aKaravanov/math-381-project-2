@@ -25,7 +25,7 @@ for i in range(len(artists)):
 np.save('distance_common_words_{}'.format(GENRE),dist)   
 
 from sklearn import manifold
-dist = np.load('distance_syllables_hip hop.npy')
+dist = np.load('distance_syllables_combine.npy')
 mds = manifold.MDS(n_components=2,dissimilarity='precomputed')
 pos = mds.fit(dist).embedding_
 
@@ -46,34 +46,43 @@ plt.show()
 #Use this for word/word length
 dist_temp = dist[~np.eye(dist.shape[0],dtype=bool)].reshape(dist.shape[0],-1)
 mean = dist_temp.mean()
-maximum = np.int_(np.rint(dist_temp.max()))
-minimum = np.int_(np.rint(dist_temp.min()))
+maximum = np.int_(np.rint(dist_temp.max()+25))
+minimum = np.int_(np.rint(dist_temp.min()-25))
 
 step = 1
 function_array = np.zeros((len(dist), len(range(minimum, maximum, step))))
+fig = plt.figure()
 for i in range(len(dist)):
     for j in range(len(range(minimum, maximum, step))):
         array = dist[:,i]
         temp = array < (minimum + j * step)
+        array = array[temp]
+        temp = 0 < array
         function_array[i,j] = len(array[temp])
-    plt.plot(range(minimum, maximum, step), function_array[i,:])
-plt.show()
+    plt.title("Number of alternative artists that are located within \n a certain distance from other alternative artists based on common words Markovs matrix")
+    plt.xlabel('Distance, Standard Unit')
+    plt.ylabel('Number of Artists within current Distance') 
+    plt.plot(range(minimum, maximum, step), function_array[i,:], label=artists[i])
+    plt.legend() 
 
 #Use this for syl.
 dist_temp = dist[~np.eye(dist.shape[0],dtype=bool)].reshape(dist.shape[0],-1)
-maximum = dist_temp.max()
-minimum = dist_temp.min()  
+maximum = dist_temp.max() + 0.30
+minimum = dist_temp.min() - 0.30
 t = np.linspace(minimum,maximum,100)
 dt = t[1]-t[0]
 function_array = np.zeros((len(dist), len(t)))
+fig = plt.figure()
 for i in range(len(dist)):
     for j in range(len(t)):
         array = dist[:,i]
         temp = array < (minimum + j * dt)
         function_array[i,j] = len(array[temp])
-    plt.plot(t, function_array[i,:])    
-
-plt.show()    
+    plt.title("Number of rap artists that are located within \n a certain distance from other rap artists based on syllables Markovs matrix")
+    plt.xlabel('Distance, Standard Unit')
+    plt.ylabel('Number of Artists within current Distance')    
+    plt.plot(t, function_array[i,:], label=artists[i])
+    plt.legend()    
 
 # Comp between genres
 PATH = 'combine/'
@@ -102,67 +111,126 @@ for i in range(len(artists)):
         elif (genre_two==1):
             GENRE = "rock and alt"  
         two = AM(GENRE,artists[j])
-        dist[i,j] = one.compare_to(two,'syllables')
+        dist[i,j] = one.compare_to(two,'words')
         dist[j,i] = dist[i,j]
         del(two)
     del(one)
    
-np.save('distance_syllables_combine',dist)
+np.save('distance_words_combine',dist)
 
 # Analys of combined data
     
 #Use this for word/word length
 dist_temp = dist[~np.eye(dist.shape[0],dtype=bool)].reshape(dist.shape[0],-1)
 mean = dist_temp.mean()
-maximum = np.int_(np.rint(dist_temp.max()))
-minimum = np.int_(np.rint(dist_temp.min()))
+maximum = np.int_(np.rint(dist_temp.max())) + 5000
+minimum = np.int_(np.rint(dist_temp.min())) - 1000
 
 step = 1
 function_array = np.zeros((len(dist), len(range(minimum, maximum, step)),3))
 for i in range(len(dist)):
     for j in range(len(range(minimum, maximum, step))):
         array = dist[:,i]
+        array = np.delete(array, i)
         temp = array < (minimum + j * step)
-        array = array[temp]
-        temp = 0 < array
-        rap = dist[0:20,i]
-        temp1 = rap < (minimum + j * step)
-        rap = rap[temp1]
-        temp1 = 0 < rap
-        alt = dist[21:39,i]
+        rap = dist[0:21,i]
+        alt = dist[21:40,i]
+        if (i<=20):
+            rap = np.delete(rap, i)
+        else:
+            alt = np.delete(alt, i - 21)
+        temp1 = rap < (minimum + j * step)        
         temp2 = alt < (minimum + j * step)
-        alt = alt[temp2]
-        temp2 = 0 < alt
-        function_array[i,j,0] = len(array[temp])
-        function_array[i,j,1] = len(rap[temp1])
-        function_array[i,j,2] = len(alt[temp2])
+        function_array[i,j,0] = array[temp].size
+        function_array[i,j,1] = rap[temp1].size
+        function_array[i,j,2] = alt[temp2].size
 
 fig = plt.figure()
 for i in range(21):
     plt.subplot(1, 2, 1)
-    plt.subplot(1, 2, 1).set_title("Distances between rap artists and other rap artists")
+    plt.subplot(1, 2, 1).set_title("Number of rap artists that are located within \n a certain distance from other rap artists based on words length Markovs matrix")
     plt.xlabel('Distance, Standard Unit')
     plt.ylabel('Number of Artists within current Distance')
-    plt.plot(range(minimum, maximum, step), function_array[i,:,1])
+    plt.plot(range(minimum, maximum, step), function_array[i,:,1], label=artists[i])
+    plt.legend()
     plt.subplot(1, 2, 2)
-    plt.subplot(1, 2, 2).set_title("Distances between rap artists and alternative artists")
+    plt.subplot(1, 2, 2).set_title("Number of alternative artists that are located within a \n certain distance from other rap artists based on words length Markovs matrix")
     plt.xlabel('Distance, Standard Unit')
     plt.ylabel('Number of Artists within current Distance')
-    plt.plot(range(minimum, maximum, step), function_array[i,:,2])   
+    plt.plot(range(minimum, maximum, step), function_array[i,:,2], label=artists[i])
+    plt.legend()   
 
 
 fig = plt.figure()
 for i in range(21,40):
     plt.subplot(1, 2, 1)
-    plt.subplot(1, 2, 1).set_title("Distances between alternative artists and rap artists")
+    plt.subplot(1, 2, 1).set_title("Number of rap artists that are located within a \n certain distance from alternative artists based on words length Markovs matrix")
     plt.xlabel('Distance, Standard Unit')
     plt.ylabel('Number of Artists within current Distance')
-    plt.plot(range(minimum, maximum, step), function_array[i,:,1])
+    plt.plot(range(minimum, maximum, step), function_array[i,:,1], label=artists[i])
+    plt.legend()   
     plt.subplot(1, 2, 2)
-    plt.subplot(1, 2, 2).set_title("Distances between alternative artists and other alternative artists")
+    plt.subplot(1, 2, 2).set_title("Number of alternative artists that are located within a \n certain distance from other alternative artists based on words length Markovs matrix")
     plt.xlabel('Distance, Standard Unit')
     plt.ylabel('Number of Artists within current Distance')
-    plt.plot(range(minimum, maximum, step), function_array[i,:,2]) 
+    plt.plot(range(minimum, maximum, step), function_array[i,:,2], label=artists[i])
+    plt.legend()    
+    
+#Use this for word syl.
+dist_temp = dist[~np.eye(dist.shape[0],dtype=bool)].reshape(dist.shape[0],-1)
+maximum = dist_temp.max() + 0.5
+minimum = dist_temp.min() - 0.5
+t = np.linspace(minimum,maximum,100)
+dt = t[1]-t[0]
+function_array = np.zeros((len(dist), len(t), 3))
+for i in range(len(dist)):
+    for j in range(len(t)):
+        array = dist[:,i]
+        array = np.delete(array, i)
+        temp = array < (minimum + j * dt)
+        rap = dist[0:21,i]
+        alt = dist[21:40,i]
+        if (i<=20):
+            rap = np.delete(rap, i)
+        else:
+            alt = np.delete(alt, i - 21)
+        temp1 = rap < (minimum + j * dt)        
+        temp2 = alt < (minimum + j * dt)
+        function_array[i,j,0] = array[temp].size
+        function_array[i,j,1] = rap[temp1].size
+        function_array[i,j,2] = alt[temp2].size
+
+fig = plt.figure()
+for i in range(21):
+    plt.subplot(1, 2, 1)
+    plt.subplot(1, 2, 1).set_title("Number of rap artists that are located within a \n certain distance from other rap artists based on syllables Markovs matrix")
+    plt.xlabel('Distance, Standard Unit')
+    plt.ylabel('Number of Artists within current Distance')
+    plt.plot(t, function_array[i,:,1], label=artists[i])
+    plt.legend()
+    plt.subplot(1, 2, 2)
+    plt.subplot(1, 2, 2).set_title("Number of alternative artists that are located within a \n certain distance from rap artists based on syllables Markovs matrix")
+    plt.xlabel('Distance, Standard Unit')
+    plt.ylabel('Number of Artists within current Distance')
+    plt.plot(t, function_array[i,:,2], label=artists[i])
+    plt.legend()   
+
+
+fig = plt.figure()
+for i in range(21,40):
+    plt.subplot(1, 2, 1)
+    plt.subplot(1, 2, 1).set_title("Number of rap artists that are located within a \n certain distance from alternative artists based on syllables Markovs matrix")
+    plt.xlabel('Distance, Standard Unit')
+    plt.ylabel('Number of Artists within current Distance')
+    plt.plot(t, function_array[i,:,1], label=artists[i])
+    plt.legend()   
+    plt.subplot(1, 2, 2)
+    plt.subplot(1, 2, 2).set_title("Number of alternative artists that are located within a \n certain distance from other alternative artists based on syllables Markovs matrix")
+    plt.xlabel('Distance, Standard Unit')
+    plt.ylabel('Number of Artists within current Distance')
+    plt.plot(t, function_array[i,:,2], label=artists[i])
+    plt.legend()        
+    
    
 
         
